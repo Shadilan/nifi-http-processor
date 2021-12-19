@@ -41,13 +41,12 @@ import org.apache.nifi.logging.ComponentLog;
 import org.apache.nifi.processor.*;
 import org.apache.nifi.processor.exception.ProcessException;
 import org.apache.nifi.processor.util.StandardValidators;
-import org.apache.nifi.processors.standard.util.ProxyAuthenticator;
-import org.apache.nifi.processors.standard.util.SoftLimitBoundedByteArrayOutputStream;
 import org.apache.nifi.proxy.ProxyConfiguration;
 import org.apache.nifi.proxy.ProxySpec;
 import org.apache.nifi.ssl.SSLContextService;
 import org.apache.nifi.ssl.SSLContextService.ClientAuth;
 import org.apache.nifi.stream.io.StreamUtils;
+import org.joda.time.DateTimeZone;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
@@ -116,7 +115,7 @@ public class CustomInvokeHTTP extends AbstractProcessor {
             "uuid", "filename", "path")));
 
     // Set of HTTP header names explicitly excluded from requests.
-    private static final Map<String, String> excludedHeaders = new HashMap<String, String>();
+    private static final Map<String, String> excludedHeaders = new HashMap<>();
 
     public static final String HTTP = "http";
     public static final String HTTPS = "https";
@@ -463,7 +462,7 @@ public class CustomInvokeHTTP extends AbstractProcessor {
      * string, but HTTP requires it to be in GMT (preferring the literal 'GMT' string).
      */
     private static final String RFC_1123 = "EEE, dd MMM yyyy HH:mm:ss 'GMT'";
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormat.forPattern(RFC_1123).withLocale(Locale.US).withZoneUTC();
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormat.forPattern(RFC_1123).withLocale(Locale.US).withZone(DateTimeZone.UTC);
 
     private final AtomicReference<OkHttpClient> okHttpClientAtomicReference = new AtomicReference<>();
 
@@ -801,7 +800,7 @@ public class CustomInvokeHTTP extends AbstractProcessor {
                 if (context.getProperty(PROP_ADD_HEADERS_TO_REQUEST).asBoolean() && requestFlowFile != null) {
                     // write the response headers as attributes
                     // this will overwrite any existing flowfile attributes
-                    requestFlowFile = session.putAllAttributes(requestFlowFile, convertAttributesFromHeaders(url, responseHttp));
+                    requestFlowFile = session.putAllAttributes(requestFlowFile, convertAttributesFromHeaders(responseHttp));
                 }
 
                 boolean outputBodyToRequestAttribute = (!isSuccess(statusCode) || putToAttribute) && requestFlowFile != null;
@@ -837,7 +836,7 @@ public class CustomInvokeHTTP extends AbstractProcessor {
 
                         // write the response headers as attributes
                         // this will overwrite any existing flowfile attributes
-                        responseFlowFile = session.putAllAttributes(responseFlowFile, convertAttributesFromHeaders(url, responseHttp));
+                        responseFlowFile = session.putAllAttributes(responseFlowFile, convertAttributesFromHeaders(responseHttp));
 
                         // transfer the message body to the payload
                         // can potentially be null in edge cases
@@ -888,14 +887,11 @@ public class CustomInvokeHTTP extends AbstractProcessor {
                 } finally {
                     if(outputStreamToRequestAttribute != null){
                         outputStreamToRequestAttribute.close();
-                        outputStreamToRequestAttribute = null;
                     }
                     if(teeInputStream != null){
                         teeInputStream.close();
-                        teeInputStream = null;
                     } else if(responseBodyStream != null){
                         responseBodyStream.close();
-                        responseBodyStream = null;
                     }
                 }
 
@@ -987,7 +983,7 @@ public class CustomInvokeHTTP extends AbstractProcessor {
                 }
 
                 @Override
-                public void writeTo(BufferedSink sink) throws IOException {
+                public void writeTo(BufferedSink sink) {
                     session.exportTo(requestFlowFile, sink.outputStream());
                 }
 
@@ -1153,7 +1149,7 @@ public class CustomInvokeHTTP extends AbstractProcessor {
     /**
      * Returns a Map of flowfile attributes from the response http headers. Multivalue headers are naively converted to comma separated strings.
      */
-    private Map<String, String> convertAttributesFromHeaders(URL url, Response responseHttp){
+    private Map<String, String> convertAttributesFromHeaders(Response responseHttp){
         // create a new hashmap to store the values from the connection
         Map<String, String> map = new HashMap<>();
         responseHttp.headers().names().forEach( (key) -> {
@@ -1164,7 +1160,7 @@ public class CustomInvokeHTTP extends AbstractProcessor {
             List<String> values = responseHttp.headers().values(key);
 
             // we ignore any headers with no actual values (rare)
-            if (values == null || values.isEmpty()) {
+            if (values.isEmpty()) {
                 return;
             }
 

@@ -42,28 +42,6 @@
                 <artifactId>nifi-standard-processors</artifactId>
                 <version>${nifi.version}</version>
             </dependency>
-            <dependency>
-                <groupId>org.apache.nifi</groupId>
-                <artifactId>nifi-expression-language</artifactId>
-                <version>${nifi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.nifi</groupId>
-                <artifactId>nifi-standard-reporting-tasks</artifactId>
-                <version>${nifi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.nifi</groupId>
-                <artifactId>nifi-standard-content-viewer</artifactId>
-                <type>war</type>
-                <version>${nifi.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.nifi</groupId>
-                <artifactId>nifi-jolt-transform-json-ui</artifactId>
-                <type>war</type>
-                <version>${nifi.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
